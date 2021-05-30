@@ -18,7 +18,7 @@
   // Runtime variables
   int saved_note = 0;
 
-  // Timing variables
+  // T iming variables
   unsigned long old_time = micros();
   unsigned long new_time;
   long interval = 1000000 / SAMPLERATE;
@@ -30,6 +30,7 @@
 
     #ifdef DEVMODE
       Serial.begin(9600);
+      Serial.println("KPS starting up!");
       synth.log();
     #endif
   }
@@ -47,6 +48,13 @@
         synth.pluck(note);
       }
 
+      #ifdef DEVMODE
+        if(Serial.available()) {
+          synth.pluck(60);
+          Serial.println("plucked!");
+        }
+      #endif
+
       // Run KS-synth master process
       auto val = synth.process();
       // Shift 16 bit output to 12 bits for DAC
@@ -57,10 +65,6 @@
 
       // Set new target timestamp
       old_time = new_time;
-
-      #ifdef DEVMODE
-        Serial.println("loop done");
-      #endif
     } else {
       // Read IO status on off-cycles
       synth.setFeedback(k_feedback.getValue());
@@ -68,12 +72,54 @@
   }
 #elif defined(PLATFORM_DARWIN_X86)
   #include <iostream>
+  #include <chrono>
   #include "Header/jack_module.h"
 
   #include "Header/KarplusStrong.h"
 
+  #include <unistd.h>
+  #include <termios.h>
+  #include <cstdio>
+  #include <map>
+  #include <array>
+
+  char getch() {
+    char buf = 0;
+    struct termios old = {0};
+    if (tcgetattr(0, &old) < 0)
+      perror("tcsetattr()");
+    old.c_lflag &= ~ICANON;
+    old.c_lflag &= ~ECHO;
+    old.c_cc[VMIN] = 1;
+    old.c_cc[VTIME] = 0;
+    if (tcsetattr(0, TCSANOW, &old) < 0)
+      perror("tcsetattr ICANON");
+    if (read(0, &buf, 1) < 0)
+      perror ("read()");
+    old.c_lflag |= ICANON;
+    old.c_lflag |= ECHO;
+    if (tcsetattr(0, TCSADRAIN, &old) < 0)
+      perror ("tcsetattr ~ICANON");
+    return (buf);
+  }
+
   int main() {
-    std::cout << "made it to main" << std::endl;
+    // Setup key lookup
+    std::map<char,int> keys;
+    keys['z'] = 36;
+    keys['x'] = 38;
+    keys['c'] = 40;
+    keys['v'] = 41;
+    keys['b'] = 43;
+    keys['n'] = 45;
+    keys['m'] = 47;
+    keys['a'] = 60;
+    keys['s'] = 62;
+    keys['d'] = 64;
+    keys['f'] = 65;
+    keys['g'] = 67;
+    keys['h'] = 69;
+
     JackModule jack;
     jack.init("synth");
     int samplerate = jack.getSamplerate();
@@ -81,50 +127,29 @@
       samplerate = 44100;
     }
 
-    KarplusStrong synth(0.9, samplerate);
+    KarplusStrong synth(0.9999, samplerate);
 
     //assign a function to the JackModule::onProcess
     jack.onProcess = [&synth](jack_default_audio_sample_t *inBuf,
                               jack_default_audio_sample_t *outBuf, jack_nframes_t nframes) {
         for(unsigned int i = 0; i < nframes; i++) {
-          auto v = synth.process();
-          outBuf[i] = (v / 32768.0) - 1.0;
-          if(v > 0) {
-            std::cout << v << std::endl;
-          }
+          outBuf[i] = (synth.process() / 32768.0) - 1.0;
         }
         return 0;
     };
 
     jack.autoConnect();
 
-
     bool running = true;
-
-    synth.pluck(60);
+    std::cout << "Q to quit, any other key plays notes" << std::endl;
 
     while (running) {
-      char cmd;
-      int note = 0;
-      std::cin >> cmd;
+      char cmd = getch();
 
-      switch (cmd) {
-        case 'a':
-          note = 60;
-          break;
-        case 's':
-          note = 62;
-          break;
-        case 'q':
-          running = false;
-          break;
-        default:
-          note = 72;
-          break;
-      }
-
-      if(note > 0) {
-        synth.pluck(note);
+      if(cmd == 'q') {
+        running = false;
+      } else if(cmd != 0) {
+        synth.pluck(keys.find(cmd)->second);
       }
     }
   }

@@ -16,7 +16,6 @@
 
 #include "Buffer.h"
 
-
 class Filter {
 public:
     Filter(float frequency, int samplerate, Buffer *input, Buffer *output);
@@ -26,8 +25,7 @@ public:
     void tick();
 
     void setFrequency(float frequency);
-    float getFrequency();
-    int getDelay();
+    void setDelayTime(int delayTime);
 
     virtual int16_t calculateSample();
     virtual void frequencyHandler();

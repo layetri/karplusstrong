@@ -3,6 +3,7 @@
 //
 
 #include "Header/Buffer.h"
+#include <iostream>
 
 Buffer::Buffer(int length) {
   data = new int16_t [length];
@@ -23,6 +24,9 @@ int Buffer::getPosition() {
 }
 
 int16_t Buffer::getSample(int sample_position) {
+//  int pos = ((sample_position > size || (sample_position * -1) > size) * sample_position % size) +
+//      ((sample_position < size && (sample_position * -1) < size) * sample_position);
+
   if(sample_position < 0) {
     return this->operator[](size + sample_position);
   } else {
@@ -44,4 +48,8 @@ void Buffer::tick() {
 
 void Buffer::write(int16_t sample) {
   data[position] = sample;
+}
+
+void Buffer::writeAhead(int16_t sample, int places) {
+  data[position + places] = sample;
 }

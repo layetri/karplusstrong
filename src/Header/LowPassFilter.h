@@ -18,7 +18,7 @@
 
 class LowPassFilter : public Filter {
   public:
-    LowPassFilter(float, int, Buffer*, Buffer*);
+    LowPassFilter(float frequency, int samplerate, Buffer* input, Buffer* output);
     ~LowPassFilter();
 
     int16_t calculateSample() override;

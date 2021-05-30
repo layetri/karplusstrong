@@ -20,6 +20,7 @@ public:
     ~Buffer();
 
     void write(int16_t sample);
+    void writeAhead(int16_t sample, int places);
     int getSize();
 
     int getPosition();

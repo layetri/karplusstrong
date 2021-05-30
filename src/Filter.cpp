@@ -10,6 +10,7 @@ Filter::Filter(float frequency, int samplerate, Buffer *input, Buffer *output) {
   // Assign buffers
   this->input = input;
   this->output = output;
+  delayTime = 0;
 
   // Set samplerate, buffer_size and defaults
   this->samplerate = samplerate;
@@ -42,8 +43,6 @@ int16_t Filter::process() {
 
 void Filter::setFrequency(float set_frequency) {
   if(set_frequency != frequency) {
-    // Set delayTime (for delay line based filtering)
-    delayTime = (int) (samplerate / set_frequency);
     // Set frequency ratio (for Butterworth filtering)
     ff = set_frequency / samplerate;
     // Store the frequency, because why not
@@ -53,12 +52,8 @@ void Filter::setFrequency(float set_frequency) {
   }
 }
 
-float Filter::getFrequency() {
-  return frequency;
-}
-
-int Filter::getDelay() {
-  return delayTime;
+void Filter::setDelayTime(int delayTime) {
+  this->delayTime = delayTime;
 }
 
 // Placeholder functions, override in subclasses

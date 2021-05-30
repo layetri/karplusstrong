@@ -5,31 +5,35 @@
 #
 */
 
-#ifndef _JACK_MODULE_H_
-#define _JACK_MODULE_H_
+#include "Header/Global.h"
 
-#include <string>
-#include <functional>
-#include <jack/jack.h>
+#ifdef PLATFORM_DARWIN_X86
+  #ifndef _JACK_MODULE_H_
+  #define _JACK_MODULE_H_
 
-class JackModule
-{
-public:
-    JackModule();
-    ~JackModule();
-    int init();
-    int init(std::string clientName);
-    unsigned long getSamplerate();
-    void autoConnect();
-    void end();
-    //the onProcess function that needs to be assigned to a JackModule object
-    std::function <int(jack_default_audio_sample_t *,
-                       jack_default_audio_sample_t *, jack_nframes_t)> onProcess;
+  #include <string>
+  #include <functional>
+  #include <jack/jack.h>
 
-private:
-    static int _wrap_jack_process_cb(jack_nframes_t nframes,void *arg);
-    jack_client_t *client;
-    const char **ports;
-};
+  class JackModule
+  {
+  public:
+      JackModule();
+      ~JackModule();
+      int init();
+      int init(std::string clientName);
+      unsigned long getSamplerate();
+      void autoConnect();
+      void end();
+      //the onProcess function that needs to be assigned to a JackModule object
+      std::function <int(jack_default_audio_sample_t *,
+                         jack_default_audio_sample_t *, jack_nframes_t)> onProcess;
 
+  private:
+      static int _wrap_jack_process_cb(jack_nframes_t nframes,void *arg);
+      jack_client_t *client;
+      const char **ports;
+  };
+
+  #endif
 #endif

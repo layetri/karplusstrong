@@ -15,7 +15,7 @@
   //#define PLATFORM_ARDUINO_ARM
 
   // Set platform to Teensy 4.0 (IMXRT1062)
-  //#define PLATFORM_TEENSY40
+  #define PLATFORM_TEENSY40
 #endif
 
 #endif //KARPLUSSTRONG_GLOBAL_H

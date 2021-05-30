@@ -19,7 +19,7 @@
 
 class DelayLine {
   public:
-    DelayLine(int delayTime, float feedback, Buffer *input);
+    DelayLine(int delayTime, float feedback, int samplerate, Buffer *input);
     ~DelayLine();
 
     int16_t process();
@@ -27,13 +27,16 @@ class DelayLine {
 
     void setDelayTime(int delayTime);
     void setFeedback(float feedback);
-    void setdf(int delayTime, float feedback);
+    void setFilterFrequency(float frequency);
 
   protected:
     Buffer *x;
     Buffer *y;
+    Buffer *z;
+    LowPassFilter *lpf;
 
     float feedback;
+    int samplerate;
 
     int delayTime;
     int position;

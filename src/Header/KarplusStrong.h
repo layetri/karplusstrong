@@ -11,6 +11,7 @@
   #include <Arduino.h>
 #elif defined(PLATFORM_DARWIN_X86)
   #include <cmath>
+  #include <random>
   #include <cstdint>
 #endif
 

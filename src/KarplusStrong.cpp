@@ -9,12 +9,15 @@ KarplusStrong::KarplusStrong(float init_feedback, int init_samplerate) {
 #if !defined(PLATFORM_DARWIN_X86) && defined(DEVMODE)
   Serial.println("Start init KPS");
 #endif
-  setDelayTime(440);
   feedback = init_feedback;
   samplerate = init_samplerate;
 
   buffer = new Buffer(samplerate);
-  delayLine = new DelayLine(delayTime, feedback, buffer);
+  delayLine = new DelayLine(10, feedback, samplerate, buffer);
+  delayLine->setFilterFrequency(5000.0);
+
+  setDelayTime(440);
+
 #if !defined(PLATFORM_DARWIN_X86) && defined(DEVMODE)
   Serial.println("Done init KPS");
 #endif
@@ -32,9 +35,13 @@ void KarplusStrong::pluck(int note) {
   //  -> enveloped input signal
   //  -> ...
 
-  std::cout << mtof(note) << std::endl;
   setDelayTime(mtof(note));
-  buffer->write(1);
+
+//  for(int i = 0; i < 5; i++) {
+//    auto smp = (int16_t) (((random() * 2.0) - 1.0) * 0x8000);
+//    buffer->writeAhead(smp, i);
+//  }
+  buffer->write(32767);
 }
 
 int16_t KarplusStrong::process() {
@@ -60,12 +67,10 @@ void KarplusStrong::setDelayTime(float frequency) {
   #if !defined(PLATFORM_DARWIN_X86) && defined(DEVMODE)
     Serial.println("set delay time");
   #endif
-  std::cout << samplerate / frequency << std::endl;
   delayLine->setDelayTime((int) (samplerate / frequency));
 }
 
 void KarplusStrong::setFeedback(float n_feedback) {
-
   feedback = n_feedback;
   delayLine->setFeedback(feedback);
 }
