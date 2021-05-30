@@ -1,0 +1,6 @@
+.pio
+CMakeListsPrivate.txt
+/.idea/
+/cmake-build-teensy40/
+/obj/
+/synth
