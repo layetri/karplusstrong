@@ -14,7 +14,7 @@
   // Set platform to Arduino
   //#define PLATFORM_ARDUINO_ARM
 
-  // Set platform to Teensy 4.0 (IMX RT 1062)
+  // Set platform to Teensy 4.0 (IMXRT1062)
   //#define PLATFORM_TEENSY40
 #endif
 
