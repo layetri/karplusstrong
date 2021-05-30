@@ -5,7 +5,9 @@ The project can be built for Teensy 4.0 (using PlatformIO, sort of) and x86 (usi
 
 ### What I did so far
 #### Week 1 - 3
-Experiments with Karplus Strong in MaxMSP. What can I do to make a sound more expressive/easily controllable/etc.?
+Experiments with Karplus Strong in MaxMSP. What can I do to make a sound more expressive/easily controllable/nice etc.?
+
+Results: [soundcloud.com/layetri/ambient-noises-maxmsp](https://soundcloud.com/layetri/ambient-noises-maxmsp)
 #### Week 4
 Break because vaccine.
 #### Week 5
