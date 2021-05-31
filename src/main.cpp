@@ -103,6 +103,20 @@
     return (buf);
   }
 
+  void voiceAllocator(int note, int voice_count, KarplusStrong* voices[]) {
+    for(int i = 0; i < voice_count; i++) {
+      if(voices[i]->available()) {
+        #ifdef DEVMODE
+          verbose("Found a voice");
+          verbose(i);
+        #endif
+        voices[i]->pluck(note);
+        return;
+      }
+    }
+    voices[0]->pluck(note);
+  }
+
   int main() {
     // Setup key lookup
     std::map<char,int> keys;
@@ -113,12 +127,12 @@
     keys['b'] = 43;
     keys['n'] = 45;
     keys['m'] = 47;
-    keys['a'] = 60;
-    keys['s'] = 62;
-    keys['d'] = 64;
-    keys['f'] = 65;
-    keys['g'] = 67;
-    keys['h'] = 69;
+    keys['a'] = 48;
+    keys['s'] = 50;
+    keys['d'] = 52;
+    keys['f'] = 53;
+    keys['g'] = 55;
+    keys['h'] = 57;
 
     JackModule jack;
     jack.init("synth");
@@ -127,13 +141,27 @@
       samplerate = 44100;
     }
 
-    KarplusStrong synth(0.9999, samplerate);
+    int voice_count = 10;
+    KarplusStrong* voices[voice_count];
+    for(auto& voice : voices) {
+      voice = new KarplusStrong(0.995, samplerate);
+    }
+//    KarplusStrong synth(0.9999, samplerate);
 
     //assign a function to the JackModule::onProcess
-    jack.onProcess = [&synth](jack_default_audio_sample_t *inBuf,
+    jack.onProcess = [&voices, voice_count](jack_default_audio_sample_t *inBuf,
                               jack_default_audio_sample_t *outBuf, jack_nframes_t nframes) {
         for(unsigned int i = 0; i < nframes; i++) {
-          outBuf[i] = (synth.process() / 32768.0) - 1.0;
+          float smp = 0.0;
+          for(auto& voice : voices) {
+            smp += (voice->process() / 32768.0);
+          }
+          if(smp > 1.0) {
+            smp = 1.0;
+          } else if (smp < -1.0) {
+            smp = -1.0;
+          }
+          outBuf[i] = smp;
         }
         return 0;
     };
@@ -149,7 +177,7 @@
       if(cmd == 'q') {
         running = false;
       } else if(cmd != 0) {
-        synth.pluck(keys.find(cmd)->second);
+        voiceAllocator(keys.find(cmd)->second, voice_count, voices);
       }
     }
   }

@@ -5,7 +5,7 @@
 #
 */
 
-#include "Header/Global.h"
+#include "Global.h"
 
 #ifdef PLATFORM_DARWIN_X86
   #ifndef _JACK_MODULE_H_

@@ -15,6 +15,7 @@ KarplusStrong::KarplusStrong(float init_feedback, int init_samplerate) {
   buffer = new Buffer(samplerate);
   delayLine = new DelayLine(10, feedback, samplerate, buffer);
   delayLine->setFilterFrequency(5000.0);
+  busy = false;
 
   setDelayTime(440);
 
@@ -35,6 +36,9 @@ void KarplusStrong::pluck(int note) {
   //  -> enveloped input signal
   //  -> ...
 
+  #ifdef DEVMODE
+    verbose("Plucked a note!");
+  #endif
   setDelayTime(mtof(note));
 
 //  for(int i = 0; i < 5; i++) {
@@ -53,6 +57,7 @@ int16_t KarplusStrong::process() {
   buffer->tick();
   // Write a 0 for the next sample
   buffer->write(0);
+  busy = smp != 0;
 
   // Return the value
   return smp;
@@ -86,4 +91,8 @@ void KarplusStrong::log() {
     Serial.print("buffer: ");
     Serial.println(reinterpret_cast<int>(&buffer));
   #endif
+}
+
+bool KarplusStrong::available() {
+  return !busy;
 }

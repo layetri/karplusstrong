@@ -29,6 +29,7 @@ class KarplusStrong {
 
     void setFeedback(float feedback);
     void log();
+    bool available();
   private:
     Buffer* buffer;
     DelayLine* delayLine;
@@ -39,6 +40,7 @@ class KarplusStrong {
     int samplerate;
     int delayTime;
     float feedback;
+    bool busy;
 };
 
 

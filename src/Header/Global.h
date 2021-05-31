@@ -5,7 +5,7 @@
 #ifndef KARPLUSSTRONG_GLOBAL_H
 #define KARPLUSSTRONG_GLOBAL_H
 
-//#define DEVMODE
+#define DEVMODE
 // Set platform to Darwin x86 (macOS)
 #define PLATFORM_DARWIN_X86
 
@@ -16,6 +16,25 @@
 
   // Set platform to Teensy 4.0 (IMXRT1062)
   #define PLATFORM_TEENSY40
+#endif
+
+// Global logging function
+#ifdef DEVMODE
+  #if defined(PLATFORM_DARWIN_X86)
+    #include <string>
+    #include <iostream>
+  #else
+    #include <Arduino.h>
+  #endif
+
+  template <typename T>
+  void verbose(const T& message) {
+    #if defined(PLATFORM_DARWIN_X86)
+      std::cout << message << std::endl;
+    #else
+      Serial.println(message);
+    #endif
+  }
 #endif
 
 #endif //KARPLUSSTRONG_GLOBAL_H
