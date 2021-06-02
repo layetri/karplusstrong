@@ -144,17 +144,17 @@
     }
 
     PresetEngine presetEngine;
-    presetEngine.import(0.995, 5000, 1);
+    presetEngine.import(0.9995, 6000, 1);
     presetEngine.import(0.8, 2000, 2);
     presetEngine.import(0.999, 1000, 1);
-    presetEngine.import(0.85, 7000, 1);
+    presetEngine.import(0.850, 7000, 1);
+    presetEngine.import(0.999, 10000, 1);
 
     int voice_count = 10;
     KarplusStrong* voices[voice_count];
     for(auto& voice : voices) {
       voice = new KarplusStrong(0.995, samplerate, 1);
     }
-//    KarplusStrong synth(0.9999, samplerate);
 
     //assign a function to the JackModule::onProcess
     jack.onProcess = [&voices](jack_default_audio_sample_t *inBuf,
@@ -179,7 +179,18 @@
     jack.autoConnect();
 
     bool running = true;
-    std::cout << "Q to quit, any other key plays notes" << std::endl;
+    std::cout << "====================================" << std::endl;
+    std::cout << "Keymap:" << std::endl;
+    std::cout << "====================================" << std::endl;
+    std::cout << "Q: quit" << std::endl;
+    std::cout << "W/E: increase/decrease feedback" << std::endl;
+    std::cout << "R/T: increase/decrease dampening" << std::endl;
+    std::cout << "Y/U: rotate presets left/right" << std::endl;
+    std::cout << "I: switch excitation modes" << std::endl;
+    std::cout << "Any other key plays notes" << std::endl;
+    std::cout << "====================================" << std::endl;
+    std::cout << "Have fun!" << std::endl;
+    std::cout << "====================================" << std::endl;
 
     while (running) {
       char cmd = getch();
@@ -209,9 +220,23 @@
       } else if(cmd == 'y') {
         // Decrease preset
         presetEngine.rotate(-1);
+        Preset pr = presetEngine.getPreset();
+
+        for(auto& voice : voices) {
+          voice->setFeedback(pr.feedback);
+          voice->setDampening(pr.dampening);
+          voice->setExciter(pr.exciter);
+        }
       } else if(cmd == 'u') {
         // Increase preset
         presetEngine.rotate(1);
+        Preset pr = presetEngine.getPreset();
+
+        for(auto& voice : voices) {
+          voice->setFeedback(pr.feedback);
+          voice->setDampening(pr.dampening);
+          voice->setExciter(pr.exciter);
+        }
       } else if(cmd == 'i') {
         // Cycle exciters
         for(auto& voice : voices) {

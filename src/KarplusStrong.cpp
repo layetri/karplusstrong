@@ -41,9 +41,6 @@ void KarplusStrong::pluck(int note) {
   //  -> enveloped input signal
   //  -> ...
 
-  #ifdef DEVMODE
-    verbose("Plucked a note!");
-  #endif
   setDelayTime(mtof(note));
 
   // Excite
@@ -54,13 +51,12 @@ void KarplusStrong::pluck(int note) {
 
   if(exciter == 0) {
     for (int i = 0; i < 5; i++) {
-      static std::default_random_engine e;
-      std::uniform_real_distribution<> dist(-32768, 32768);
-      auto smp = (int16_t) (dist(e));
-
-      #ifdef DEVMODE
-        // Log the sample
-        verbose(smp);
+      #ifdef PLATFORM_DARWIN_X86
+        static std::default_random_engine e;
+        std::uniform_real_distribution<> dist(-32768, 32768);
+        auto smp = (int16_t) dist(e);
+      #elif defined(PLATFORM_TEENSY40)
+        auto smp = (int16_t) random(-32768, 32768);
       #endif
 
       buffer->writeAhead(smp, i);
@@ -119,7 +115,7 @@ float KarplusStrong::mtof(int note) {
 
 void KarplusStrong::setDelayTime(float frequency) {
   #if !defined(PLATFORM_DARWIN_X86) && defined(DEVMODE)
-    Serial.println("set delay time");
+    verbose("set delay time");
   #endif
   delayLine->setDelayTime((int) (samplerate / frequency));
 }
@@ -144,6 +140,16 @@ void KarplusStrong::log() {
 
 bool KarplusStrong::available() {
   return !busy;
+}
+
+void KarplusStrong::setDampening(float dampening) {
+  if(dampening > 0) {
+    delayLine->setFilterFrequency(dampening);
+  }
+}
+
+void KarplusStrong::setExciter(int exciter) {
+  this->exciter = exciter;
 }
 
 #ifdef PLATFORM_DARWIN_X86

@@ -29,6 +29,8 @@ class KarplusStrong {
     void pluck(int note);
 
     void setFeedback(float feedback);
+    void setDampening(float dampening);
+    void setExciter(int exciter);
     void log();
     bool available();
 
