@@ -53,3 +53,7 @@ void Buffer::write(int16_t sample) {
 void Buffer::writeAhead(int16_t sample, int places) {
   data[position + places] = sample;
 }
+
+int16_t Buffer::readAhead(int places) {
+  return data[position + places];
+}

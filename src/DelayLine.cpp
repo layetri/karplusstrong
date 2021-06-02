@@ -63,5 +63,10 @@ void DelayLine::setFeedback(float feedback) {
 }
 
 void DelayLine::setFilterFrequency(float ffreq) {
+  filter_frequency = ffreq;
   lpf->setFrequency(ffreq);
+}
+
+float DelayLine::getFilterFrequency() {
+  return filter_frequency;
 }

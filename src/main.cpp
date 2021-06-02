@@ -76,12 +76,12 @@
   #include "Header/jack_module.h"
 
   #include "Header/KarplusStrong.h"
+  #include "Header/Preset.h"
 
   #include <unistd.h>
   #include <termios.h>
   #include <cstdio>
   #include <map>
-  #include <array>
 
   char getch() {
     char buf = 0;
@@ -107,7 +107,7 @@
     for(int i = 0; i < voice_count; i++) {
       if(voices[i]->available()) {
         #ifdef DEVMODE
-          verbose("Found a voice");
+          verbose("Found a voice!");
           verbose(i);
         #endif
         voices[i]->pluck(note);
@@ -133,6 +133,8 @@
     keys['f'] = 53;
     keys['g'] = 55;
     keys['h'] = 57;
+    keys['j'] = 59;
+    keys['k'] = 60;
 
     JackModule jack;
     jack.init("synth");
@@ -141,26 +143,32 @@
       samplerate = 44100;
     }
 
+    PresetEngine presetEngine;
+    presetEngine.import(0.995, 5000, 1);
+    presetEngine.import(0.8, 2000, 2);
+
     int voice_count = 10;
     KarplusStrong* voices[voice_count];
     for(auto& voice : voices) {
-      voice = new KarplusStrong(0.995, samplerate);
+      voice = new KarplusStrong(0.995, samplerate, 1);
     }
 //    KarplusStrong synth(0.9999, samplerate);
 
     //assign a function to the JackModule::onProcess
-    jack.onProcess = [&voices, voice_count](jack_default_audio_sample_t *inBuf,
+    jack.onProcess = [&voices](jack_default_audio_sample_t *inBuf,
                               jack_default_audio_sample_t *outBuf, jack_nframes_t nframes) {
         for(unsigned int i = 0; i < nframes; i++) {
           float smp = 0.0;
           for(auto& voice : voices) {
             smp += (voice->process() / 32768.0);
           }
+
           if(smp > 1.0) {
             smp = 1.0;
           } else if (smp < -1.0) {
             smp = -1.0;
           }
+
           outBuf[i] = smp;
         }
         return 0;
@@ -176,6 +184,37 @@
 
       if(cmd == 'q') {
         running = false;
+      } else if(cmd == 'w') {
+        // Decrease feedback
+        for(auto& voice : voices) {
+          voice->decreaseFeedback();
+        }
+      } else if(cmd == 'e') {
+        // Increase feedback
+        for(auto& voice : voices) {
+          voice->increaseFeedback();
+        }
+      } else if(cmd == 'r') {
+        // Decrease dampening
+        for(auto& voice : voices) {
+          voice->decreaseDampening();
+        }
+      } else if(cmd == 't') {
+        // Increase dampening
+        for(auto& voice : voices) {
+          voice->increaseDampening();
+        }
+      } else if(cmd == 'y') {
+        // Decrease preset
+        presetEngine.turn(-1);
+      } else if(cmd == 'u') {
+        // Increase preset
+        presetEngine.turn(1);
+      } else if(cmd == 'i') {
+        // Cycle exciters
+        for(auto& voice : voices) {
+          voice->nextMode();
+        }
       } else if(cmd != 0) {
         voiceAllocator(keys.find(cmd)->second, voice_count, voices);
       }

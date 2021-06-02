@@ -13,6 +13,7 @@
   #include <cmath>
   #include <random>
   #include <cstdint>
+  #include <ctime>
 #endif
 
 #include "Buffer.h"
@@ -20,7 +21,7 @@
 
 class KarplusStrong {
   public:
-    KarplusStrong(float feedback, int samplerate);
+    KarplusStrong(float feedback, int samplerate, int exciter);
     ~KarplusStrong();
 
     int16_t process();
@@ -30,6 +31,16 @@ class KarplusStrong {
     void setFeedback(float feedback);
     void log();
     bool available();
+
+    #ifdef PLATFORM_DARWIN_X86
+      void increaseFeedback();
+      void decreaseFeedback();
+
+      void increaseDampening();
+      void decreaseDampening();
+
+      void nextMode();
+    #endif
   private:
     Buffer* buffer;
     DelayLine* delayLine;
@@ -39,6 +50,10 @@ class KarplusStrong {
 
     int samplerate;
     int delayTime;
+    int remaining_trigger_time;
+
+    int exciter;
+
     float feedback;
     bool busy;
 };

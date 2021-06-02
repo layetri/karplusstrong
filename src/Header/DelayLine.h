@@ -28,6 +28,7 @@ class DelayLine {
     void setDelayTime(int delayTime);
     void setFeedback(float feedback);
     void setFilterFrequency(float frequency);
+    float getFilterFrequency();
 
   protected:
     Buffer *x;
@@ -36,6 +37,7 @@ class DelayLine {
     LowPassFilter *lpf;
 
     float feedback;
+    float filter_frequency;
     int samplerate;
 
     int delayTime;

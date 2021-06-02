@@ -5,7 +5,7 @@
 #ifndef KARPLUSSTRONG_GLOBAL_H
 #define KARPLUSSTRONG_GLOBAL_H
 
-#define DEVMODE
+//#define DEVMODE
 // Set platform to Darwin x86 (macOS)
 #define PLATFORM_DARWIN_X86
 

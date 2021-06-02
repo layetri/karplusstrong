@@ -21,13 +21,14 @@ public:
 
     void write(int16_t sample);
     void writeAhead(int16_t sample, int places);
-    int getSize();
 
     int getPosition();
+    int getSize();
+    void tick();
 
     int16_t getSample(int sample_position);
     int16_t getCurrentSample();
-    void tick();
+    int16_t readAhead(int places);
 
     int16_t& operator[] (int index) {
       return data[index];

@@ -3,9 +3,8 @@
 //
 
 #include "Header/KarplusStrong.h"
-#include <iostream>
 
-KarplusStrong::KarplusStrong(float init_feedback, int init_samplerate) {
+KarplusStrong::KarplusStrong(float init_feedback, int init_samplerate, int exciter) {
 #if !defined(PLATFORM_DARWIN_X86) && defined(DEVMODE)
   Serial.println("Start init KPS");
 #endif
@@ -15,7 +14,13 @@ KarplusStrong::KarplusStrong(float init_feedback, int init_samplerate) {
   buffer = new Buffer(samplerate);
   delayLine = new DelayLine(10, feedback, samplerate, buffer);
   delayLine->setFilterFrequency(5000.0);
+
   busy = false;
+  remaining_trigger_time = 0;
+
+  this->exciter = exciter;
+
+  srand(678438625);
 
   setDelayTime(440);
 
@@ -41,11 +46,51 @@ void KarplusStrong::pluck(int note) {
   #endif
   setDelayTime(mtof(note));
 
-//  for(int i = 0; i < 5; i++) {
-//    auto smp = (int16_t) (((random() * 2.0) - 1.0) * 0x8000);
-//    buffer->writeAhead(smp, i);
-//  }
-  buffer->write(32767);
+  // Excite
+  // Possible exciters:
+  //  0: noise
+  //  1: sine
+  //  2: pulse
+
+  if(exciter == 0) {
+    for (int i = 0; i < 5; i++) {
+      static std::default_random_engine e;
+      std::uniform_real_distribution<> dist(-32768, 32768);
+      auto smp = (int16_t) (dist(e));
+
+      #ifdef DEVMODE
+        // Log the sample
+        verbose(smp);
+      #endif
+
+      buffer->writeAhead(smp, i);
+    }
+    remaining_trigger_time = 5;
+  } else if(exciter == 1) {
+    // Do sine excitation
+    float phase_step = 440.0 / samplerate;
+    float phase = 0.0;
+
+    for(int i = 0; i < 10; i++) {
+      int16_t smp = M_PI * 2 * phase * 32768;
+      smp = (buffer->readAhead(i - 1) + smp) * 0.5;
+      buffer->writeAhead(smp, i);
+
+      phase += phase_step;
+      if(phase > 1.0) phase -= 1.0;
+    }
+    remaining_trigger_time = 10;
+  } else if(exciter == 2) {
+    for(int i = 0; i < 10; i++) {
+      int16_t smp;
+      if(i % 2) {
+        smp = 32767;
+      } else {
+        smp = -32767;
+      }
+      buffer->writeAhead(smp, i);
+    }
+  }
 }
 
 int16_t KarplusStrong::process() {
@@ -55,8 +100,12 @@ int16_t KarplusStrong::process() {
   // Push the DL and buffer forward
   delayLine->tick();
   buffer->tick();
-  // Write a 0 for the next sample
-  buffer->write(0);
+  // Write a 0 for the next sample (if a burst isn't in progress)
+  if(remaining_trigger_time > 0) {
+    remaining_trigger_time--;
+  } else {
+    buffer->write(0);
+  }
   busy = smp != 0;
 
   // Return the value
@@ -96,3 +145,35 @@ void KarplusStrong::log() {
 bool KarplusStrong::available() {
   return !busy;
 }
+
+#ifdef PLATFORM_DARWIN_X86
+  void KarplusStrong::increaseFeedback() {
+    if(feedback < 0.995) {
+      setFeedback(feedback + 0.005);
+    }
+  }
+  void KarplusStrong::decreaseFeedback() {
+    if(feedback > 0.005) {
+      setFeedback(feedback - 0.005);
+    }
+  }
+
+  void KarplusStrong::increaseDampening() {
+    if(delayLine->getFilterFrequency() > 10) {
+      delayLine->setFilterFrequency(delayLine->getFilterFrequency() - 100);
+    }
+  }
+  void KarplusStrong::decreaseDampening() {
+    if(delayLine->getFilterFrequency() < 10000) {
+      delayLine->setFilterFrequency(delayLine->getFilterFrequency() + 100);
+    }
+  }
+
+  void KarplusStrong::nextMode() {
+    if(exciter < 2) {
+      exciter++;
+    } else {
+      exciter = 0;
+    }
+  }
+#endif
