@@ -30,7 +30,11 @@ struct Preset {
 class PresetEngine {
   public:
     PresetEngine() {iterator=0; dial = 0;};
-    ~PresetEngine() {delete[] presets;};
+    ~PresetEngine() {
+      for(auto& preset : presets) {
+        delete preset;
+      }
+    };
 
     void import(float n_feedback, float n_dampening, int n_exciter) {
       if(iterator < NUM_PRESETS) {
@@ -41,6 +45,7 @@ class PresetEngine {
       }
     };
 
+    // Interpolate between different presets when a knob is turned.
     void turn(int amount) {
       if(dial <= 100 - amount) {
         // Find step per preset
