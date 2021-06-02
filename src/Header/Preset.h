@@ -12,6 +12,8 @@
 
 #elif defined(PLATFORM_DARWIN_X86)
   #include <cmath>
+  #include <string>
+  #include <sstream>
 #endif
 
 struct Preset {
@@ -29,10 +31,16 @@ struct Preset {
 
 class PresetEngine {
   public:
-    PresetEngine() {iterator=0; dial = 0;};
+    PresetEngine() {
+      iterator = 0;
+      dial = 0;
+      factor = 0;
+      preset = 0;
+      step = (100.0 / NUM_PRESETS);
+    };
     ~PresetEngine() {
-      for(auto& preset : presets) {
-        delete preset;
+      for(auto& pr : presets) {
+        delete pr;
       }
     };
 
@@ -45,31 +53,63 @@ class PresetEngine {
       }
     };
 
+    // For working with dynamically imported presets:
+    //  check if the next preset is set.
+    bool rangeTest(int amount) {
+      if(dial + amount > step * preset) {
+        return preset + 1 < iterator;
+      }
+      return true;
+    }
+
     // Interpolate between different presets when a knob is turned.
-    void turn(int amount) {
-      if(dial <= 100 - amount) {
+    void rotate(int amount) {
+      if(dial <= 100.0 - amount && rangeTest(amount)) {
         // Find step per preset
-        int step = (100 / NUM_PRESETS);
         dial += amount;
 
-        int pr = ceil(dial / step);
-        float factor = (dial - ((pr - 1) * step)) / step;
+        // Calculate what the next preset will be
+        preset = ceil(dial / step);
+        factor = (dial - ((preset - 1.0) * step)) / step;
 
-        feedback = factor * presets[pr]->feedback + (1 - factor) * presets[pr - 1]->feedback;
-        dampening = factor * presets[pr]->dampening + (1 - factor) * presets[pr - 1]->dampening;
+        // Interpolate from one preset to the next
+        feedback = factor * presets[preset]->feedback + (1 - factor) * presets[preset - 1]->feedback;
+        dampening = factor * presets[preset]->dampening + (1 - factor) * presets[preset - 1]->dampening;
 
+        // Switch the exciter preset (no interpolation here, sadly)
         if (factor > 0.5) {
-          exciter = presets[pr]->exciter;
+          exciter = presets[preset]->exciter;
         } else {
-          exciter = presets[pr - 1]->exciter;
+          exciter = presets[preset - 1]->exciter;
         }
+      } else {
+        // Throw a warning if the requested move is impossible
+        #ifdef DEVMODE
+          verbose("Preset index out of range, keeping latest setting.");
+        #endif
       }
+
+      #ifdef DEVMODE
+        verbose(getPresetInfoString());
+      #endif
     }
+
+    #ifdef DEVMODE
+      std::string getPresetInfoString() const {
+        std::ostringstream oss;
+        oss << (1 - factor) * 100 << "% preset " << preset - 1 << ", " << factor * 100 << "% preset " << preset;
+        return oss.str();
+      }
+    #endif
   private:
     Preset* presets[NUM_PRESETS];
     int iterator;
     // 0 - 100
-    int dial;
+    float dial;
+
+    int preset;
+    float factor;
+    float step;
 
     float feedback;
     float dampening;

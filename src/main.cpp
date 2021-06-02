@@ -146,6 +146,8 @@
     PresetEngine presetEngine;
     presetEngine.import(0.995, 5000, 1);
     presetEngine.import(0.8, 2000, 2);
+    presetEngine.import(0.999, 1000, 1);
+    presetEngine.import(0.85, 7000, 1);
 
     int voice_count = 10;
     KarplusStrong* voices[voice_count];
@@ -206,10 +208,10 @@
         }
       } else if(cmd == 'y') {
         // Decrease preset
-        presetEngine.turn(-1);
+        presetEngine.rotate(-1);
       } else if(cmd == 'u') {
         // Increase preset
-        presetEngine.turn(1);
+        presetEngine.rotate(1);
       } else if(cmd == 'i') {
         // Cycle exciters
         for(auto& voice : voices) {
