@@ -37,14 +37,11 @@ int16_t DelayLine::process() {
   int16_t sample;
 
   // Run the delay line
-//  sample = (int16_t) ((x->getSample(position - delayTime) + (z->getSample(position - delayTime) * feedback)) * 0.5);
   y->write(x->getSample(position - delayTime) + ((z->getSample(position - delayTime - 1) + z->getSample(position - delayTime)) * 0.5 * feedback));
 
   // Process the LPF
   sample = (y->getSample(position - delayTime) + lpf->process()) * 0.5;
 
-  // Store the sample in the output buffer
-//  y->write(sample);
   y->tick();
   z->tick();
   lpf->tick();

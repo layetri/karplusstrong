@@ -6,14 +6,14 @@
 
 KarplusStrong::KarplusStrong(float init_feedback, int init_samplerate, int exciter) {
 #if !defined(PLATFORM_DARWIN_X86) && defined(DEVMODE)
-  Serial.println("Start init KPS");
+  verbose("Start init KPS");
 #endif
   feedback = init_feedback;
   samplerate = init_samplerate;
 
   buffer = new Buffer(samplerate);
   delayLine = new DelayLine(10, feedback, samplerate, buffer);
-  delayLine->setFilterFrequency(5000.0);
+  delayLine->setFilterFrequency(6000.0);
 
   busy = false;
   remaining_trigger_time = 0;
@@ -25,7 +25,7 @@ KarplusStrong::KarplusStrong(float init_feedback, int init_samplerate, int excit
   setDelayTime(440);
 
 #if !defined(PLATFORM_DARWIN_X86) && defined(DEVMODE)
-  Serial.println("Done init KPS");
+  verbose("Done init KPS");
 #endif
 }
 
@@ -40,6 +40,14 @@ void KarplusStrong::pluck(int note) {
   //  -> Sine/Square/Saw burst, with envelope
   //  -> enveloped input signal
   //  -> ...
+
+  // TODO: Add audio input as exciter
+  //  -> v/oct cv for pitch
+  //  -> trigger for pluck
+  //  -> audio input buffer as exciter
+
+  // TODO: Add audio input trigger
+  //  -> Audio input triggers pluck and serves as exciter at the same time
 
   setDelayTime(mtof(note));
 
@@ -96,12 +104,14 @@ int16_t KarplusStrong::process() {
   // Push the DL and buffer forward
   delayLine->tick();
   buffer->tick();
+
   // Write a 0 for the next sample (if a burst isn't in progress)
   if(remaining_trigger_time > 0) {
     remaining_trigger_time--;
   } else {
     buffer->write(0);
   }
+
   busy = smp != 0;
 
   // Return the value
