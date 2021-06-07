@@ -12,3 +12,10 @@ Results: [soundcloud.com/layetri/ambient-noises-maxmsp](https://soundcloud.com/l
 Break because vaccine.
 #### Week 5
 Started implementation in C++. Debugging on Teensy is (kind of) hell, so I'm also writing an implementation using Jack that can run on macOS natively. Yay for cross-platform compatibility ✨.
+#### Week 6
+Implemented the whole thing. Added a preset engine for easy morphing between settings. Ported the whole thing to work on Teensy (not optimized yet, there are still plenty of bugs).
+
+### Future ideas
+- Adding more IO: Audio Input that can be used as both a trigger and an exciter, a pluck trigger in, and more.
+- Using a different DAC because MCP4922 isn't _really_ intended for audio (it's performing fine, but still).
+- Designing a nice face plate and user interface.
