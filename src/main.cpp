@@ -179,6 +179,7 @@
     keys['j'] = 59;
     keys['k'] = 60;
 
+    // Do Jack setup
     JackModule jack;
     jack.init("synth");
     int samplerate = jack.getSamplerate();
@@ -186,6 +187,7 @@
       samplerate = 44100;
     }
 
+    // Setup preset engine and load presets
     PresetEngine presetEngine;
     presetEngine.import(0.9995, 6000, 1);
     presetEngine.import(0.8, 4000, 2);
@@ -193,13 +195,14 @@
     presetEngine.import(0.850, 7000, 1);
     presetEngine.import(0.995, 9000, 1);
 
+    // Initialize the synth voices
     int voice_count = 10;
     KarplusStrong* voices[voice_count];
     for(auto& voice : voices) {
       voice = new KarplusStrong(0.9995, samplerate, 1);
     }
 
-    //assign a function to the JackModule::onProcess
+    // Assign the Jack callback function
     jack.onProcess = [&voices](jack_default_audio_sample_t *inBuf,
                               jack_default_audio_sample_t *outBuf, jack_nframes_t nframes) {
         for(unsigned int i = 0; i < nframes; i++) {
@@ -218,9 +221,9 @@
         }
         return 0;
     };
-
     jack.autoConnect();
 
+    // Start the UI and print a welcome message
     bool running = true;
     std::cout << "====================================" << std::endl;
     std::cout << "Keymap:" << std::endl;
@@ -235,6 +238,7 @@
     std::cout << "Have fun!" << std::endl;
     std::cout << "====================================" << std::endl;
 
+    // Loop for UI tasks
     while (running) {
       char cmd = getch();
 
