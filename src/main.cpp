@@ -233,6 +233,7 @@
 
 
     // Setup RTMidi
+    // RTMidi implementation mostly copied from http://www.music.mcgill.ca/~gary/rtmidi/
     RtMidiIn  *midi_in = 0;
     std::vector<unsigned char> message;
     int nBytes, i;
