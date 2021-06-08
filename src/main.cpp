@@ -1,5 +1,7 @@
 #include "Header/Global.h"
 
+#define FEEDBACK_LONG 0.9995
+
 #if !defined(PLATFORM_DARWIN_X86)
   #include <Arduino.h>
   #include <MCP4922.h>
@@ -120,6 +122,7 @@
   #include <iostream>
   #include <chrono>
   #include "Header/jack_module.h"
+  #include "Header/RtMidi.h"
 
   #include "Header/KarplusStrong.h"
   #include "Header/Preset.h"
@@ -128,6 +131,10 @@
   #include <termios.h>
   #include <cstdio>
   #include <map>
+  #include <csignal>
+
+  bool done;
+  static void finish(int ignore){ done = true; }
 
   char getch() {
     char buf = 0;
@@ -160,6 +167,8 @@
   }
 
   int main() {
+    bool running = true;
+
     // Setup key lookup
     std::map<char,int> keys;
     keys['z'] = 36;
@@ -222,76 +231,187 @@
     };
     jack.autoConnect();
 
-    // Start the UI and print a welcome message
-    bool running = true;
-    std::cout << "====================================" << std::endl;
-    std::cout << "Keymap:" << std::endl;
-    std::cout << "====================================" << std::endl;
-    std::cout << "Q: quit" << std::endl;
-    std::cout << "W/E: increase/decrease feedback" << std::endl;
-    std::cout << "R/T: increase/decrease dampening" << std::endl;
-    std::cout << "Y/U: rotate presets left/right" << std::endl;
-    std::cout << "I: switch excitation modes" << std::endl;
-    std::cout << "Any other key plays notes" << std::endl;
-    std::cout << "====================================" << std::endl;
-    std::cout << "Have fun!" << std::endl;
-    std::cout << "====================================" << std::endl;
 
-    // Loop for UI tasks
-    while (running) {
-      char cmd = getch();
+    // Setup RTMidi
+    RtMidiIn  *midi_in = 0;
+    std::vector<unsigned char> message;
+    int nBytes, i;
+    double stamp;
 
-      if(cmd == 'q') {
-        running = false;
-      } else if(cmd == 'w') {
-        // Decrease feedback
-        for(auto& voice : voices) {
-          voice->decreaseFeedback();
-        }
-      } else if(cmd == 'e') {
-        // Increase feedback
-        for(auto& voice : voices) {
-          voice->increaseFeedback();
-        }
-      } else if(cmd == 'r') {
-        // Decrease dampening
-        for(auto& voice : voices) {
-          voice->decreaseDampening();
-        }
-      } else if(cmd == 't') {
-        // Increase dampening
-        for(auto& voice : voices) {
-          voice->increaseDampening();
-        }
-      } else if(cmd == 'y') {
-        // Decrease preset
-        presetEngine.rotate(-1);
-        Preset pr = presetEngine.getPreset();
+    // RtMidiIn constructor
+    try {
+      midi_in = new RtMidiIn();
+    }
+    catch ( RtMidiError &error ) {
+      error.printMessage();
+      exit( EXIT_FAILURE );
+    }
+    // Check inputs.
+    unsigned int nPorts = midi_in->getPortCount();
+    std::cout << "\nThere are " << nPorts << " MIDI input sources available.\n";
+    std::string portName;
+    for ( unsigned int i=0; i<nPorts; i++ ) {
+      try {
+        portName = midi_in->getPortName(i);
+      }
+      catch ( RtMidiError &error ) {
+        error.printMessage();
+        goto cleanup;
+      }
+      std::cout << "  Input Port #" << i << ": " << portName << '\n';
+    }
 
-        for(auto& voice : voices) {
-          voice->setFeedback(pr.feedback);
-          voice->setDampening(pr.dampening);
-          voice->setExciter(pr.exciter);
-        }
-      } else if(cmd == 'u') {
-        // Increase preset
-        presetEngine.rotate(1);
-        Preset pr = presetEngine.getPreset();
+    if(nPorts > 0) {
+      std::cout << "\nChoose a MIDI port to use: ";
 
-        for(auto& voice : voices) {
-          voice->setFeedback(pr.feedback);
-          voice->setDampening(pr.dampening);
-          voice->setExciter(pr.exciter);
+      int port;
+      std::cin >> port;
+      midi_in->openPort(port);
+
+      std::cout << "\n\n";
+
+      // Don't ignore sysex, timing, or active sensing messages.
+      midi_in->ignoreTypes(false, false, false);
+
+      // Install an interrupt handler function.
+      done = false;
+      (void) signal(SIGINT, finish);
+      // Periodically check input queue.
+      std::cout << "Reading MIDI from port " << port << "... quit with Ctrl-C.\n";
+      while (!done) {
+        stamp = midi_in->getMessage(&message);
+        nBytes = message.size();
+
+        if (nBytes > 0) {
+          // Handle note ON messages
+          if (message[0] == 144) {
+            voiceAllocator(message[1], voice_count, voices);
+          }
+          if (message[0] == 176) {
+            // Handle sustain pedal
+            if(message[1] == 64) {
+              if (message[2] == 127) {
+                for (auto &voice : voices) {
+                  voice->setFeedback(FEEDBACK_LONG);
+                }
+              } else {
+                for (auto &voice : voices) {
+                  voice->setFeedback(presetEngine.getPreset().feedback);
+                }
+              }
+            }
+            // Handle knobs
+            if(message[1] == 112) {
+              // Preset knob
+              presetEngine.set(message[2] / 1.27);
+              Preset pr = presetEngine.getPreset();
+
+              for (auto &voice : voices) {
+                voice->setFeedback(pr.feedback);
+                voice->setDampening(pr.dampening);
+                voice->setExciter(pr.exciter);
+              }
+            }
+            // Feedback
+            if(message[1] == 74) {
+              for (auto &voice : voices) {
+                voice->setFeedback(0.9 + ((message[2] / 127.0) * 0.09995));
+              }
+            }
+            // Dampening
+            if(message[1] == 71) {
+              for (auto &voice : voices) {
+                voice->setDampening(1000.0 + (message[2] / 0.0127));
+              }
+            }
+          }
         }
-      } else if(cmd == 'i') {
-        // Cycle exciters
-        for(auto& voice : voices) {
-          voice->nextMode();
+
+        #if defined(DEVMODE)
+          for (i = 0; i < nBytes; i++)
+            std::cout << "Byte " << i << " = " << (int) message[i] << ", ";
+          if (nBytes > 0)
+            std::cout << "stamp = " << stamp << std::endl;
+        #endif
+
+        // Sleep for 10 milliseconds.
+        usleep(10000);
+      }
+    } else {
+      // Start the UI and print a welcome message
+      std::cout << "No MIDI inputs found, using keyboard input instead.\n" << std::endl;
+      std::cout << "====================================" << std::endl;
+      std::cout << "Keymap:" << std::endl;
+      std::cout << "====================================" << std::endl;
+      std::cout << "Q: quit" << std::endl;
+      std::cout << "W/E: increase/decrease feedback" << std::endl;
+      std::cout << "R/T: increase/decrease dampening" << std::endl;
+      std::cout << "Y/U: rotate presets left/right" << std::endl;
+      std::cout << "I: switch excitation modes" << std::endl;
+      std::cout << "Any other key plays notes" << std::endl;
+      std::cout << "====================================" << std::endl;
+      std::cout << "Have fun!" << std::endl;
+      std::cout << "====================================" << std::endl;
+
+      // Loop for UI tasks
+      while (running) {
+        char cmd = getch();
+
+        if (cmd == 'q') {
+          running = false;
+        } else if (cmd == 'w') {
+          // Decrease feedback
+          for (auto &voice : voices) {
+            voice->decreaseFeedback();
+          }
+        } else if (cmd == 'e') {
+          // Increase feedback
+          for (auto &voice : voices) {
+            voice->increaseFeedback();
+          }
+        } else if (cmd == 'r') {
+          // Decrease dampening
+          for (auto &voice : voices) {
+            voice->decreaseDampening();
+          }
+        } else if (cmd == 't') {
+          // Increase dampening
+          for (auto &voice : voices) {
+            voice->increaseDampening();
+          }
+        } else if (cmd == 'y') {
+          // Decrease preset
+          presetEngine.rotate(-1);
+          Preset pr = presetEngine.getPreset();
+
+          for (auto &voice : voices) {
+            voice->setFeedback(pr.feedback);
+            voice->setDampening(pr.dampening);
+            voice->setExciter(pr.exciter);
+          }
+        } else if (cmd == 'u') {
+          // Increase preset
+          presetEngine.rotate(1);
+          Preset pr = presetEngine.getPreset();
+
+          for (auto &voice : voices) {
+            voice->setFeedback(pr.feedback);
+            voice->setDampening(pr.dampening);
+            voice->setExciter(pr.exciter);
+          }
+        } else if (cmd == 'i') {
+          // Cycle exciters
+          for (auto &voice : voices) {
+            voice->nextMode();
+          }
+        } else if (cmd != 0) {
+          voiceAllocator(keys.find(cmd)->second, voice_count, voices);
         }
-      } else if(cmd != 0) {
-        voiceAllocator(keys.find(cmd)->second, voice_count, voices);
       }
     }
+
+    cleanup:
+      delete midi_in;
   }
 #endif
 

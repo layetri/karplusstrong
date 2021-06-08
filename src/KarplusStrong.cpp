@@ -53,15 +53,10 @@ void KarplusStrong::pluck(int note) {
 
   setDelayTime(mtof(note));
 
-  // Excite
-  // Possible exciters:
-  //  0: noise
-  //  1: sine
-  //  2: pulse
-
   int length = 10;
   std::string exciters[3] = {"noise", "sine", "impulse"};
 
+  // Handle excitation via an interface struct
   ex_interface->excite(exciters[exciter], length);
   remaining_trigger_time = length;
 }

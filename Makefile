@@ -1,7 +1,7 @@
 # ✨ Daniël Kamp's supersonic Makefile, oh yeah ✨
 
 CC=g++
-CFLAGS = -I/usr/local/include -Wall -std=c++14
+CFLAGS = -I/usr/local/include -Wall -fexceptions -std=c++14 -framework CoreMIDI -framework CoreAudio -framework CoreFoundation
 LDFLAGS= -ljack
 
 SRC_DIR=src
