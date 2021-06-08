@@ -1,4 +1,4 @@
-// KarplusStrong (dev name)
+// Tensions (dev name)
 //
 // Simple KarplusStrong implementation to run on Teensy audio dev board
 // Copyright © 2021 Daniël Kamp
