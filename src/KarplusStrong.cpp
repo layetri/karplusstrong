@@ -15,6 +15,8 @@ KarplusStrong::KarplusStrong(float init_feedback, int init_samplerate, int excit
   delayLine = new DelayLine(10, feedback, samplerate, buffer);
   delayLine->setFilterFrequency(6000.0);
 
+  ex_interface = new ExcitationInterface(samplerate, buffer);
+
   busy = false;
   remaining_trigger_time = 0;
 
@@ -57,44 +59,11 @@ void KarplusStrong::pluck(int note) {
   //  1: sine
   //  2: pulse
 
-  if(exciter == 0) {
-    for (int i = 0; i < 5; i++) {
-      #ifdef PLATFORM_DARWIN_X86
-        static std::default_random_engine e;
-        std::uniform_real_distribution<> dist(-32768, 32768);
-        auto smp = (int16_t) dist(e);
-      #elif defined(PLATFORM_TEENSY40)
-        auto smp = (int16_t) random(-32768, 32768);
-      #endif
+  int length = 10;
+  std::string exciters[3] = {"noise", "sine", "impulse"};
 
-      buffer->writeAhead(smp, i);
-    }
-    remaining_trigger_time = 5;
-  } else if(exciter == 1) {
-    // Do sine excitation
-    float phase_step = 440.0 / samplerate;
-    float phase = 0.0;
-
-    for(int i = 0; i < 10; i++) {
-      int16_t smp = M_PI * 2 * phase * 32768;
-      smp = (buffer->readAhead(i - 1) + smp) * 0.5;
-      buffer->writeAhead(smp, i);
-
-      phase += phase_step;
-      if(phase > 1.0) phase -= 1.0;
-    }
-    remaining_trigger_time = 10;
-  } else if(exciter == 2) {
-    for(int i = 0; i < 10; i++) {
-      int16_t smp;
-      if(i % 2) {
-        smp = 32767;
-      } else {
-        smp = -32767;
-      }
-      buffer->writeAhead(smp, i);
-    }
-  }
+  ex_interface->excite(exciters[exciter], length);
+  remaining_trigger_time = length;
 }
 
 int16_t KarplusStrong::process() {

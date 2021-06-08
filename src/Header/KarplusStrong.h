@@ -6,14 +6,13 @@
 #define KARPLUSSTRONG_KARPLUSSTRONG_H
 
 #include "Global.h"
+#include "Exciter.h"
+#include <string>
 
 #if !defined(PLATFORM_DARWIN_X86)
   #include <Arduino.h>
 #elif defined(PLATFORM_DARWIN_X86)
   #include <cmath>
-  #include <random>
-  #include <cstdint>
-  #include <ctime>
 #endif
 
 #include "Buffer.h"
@@ -31,6 +30,7 @@ class KarplusStrong {
     void setFeedback(float feedback);
     void setDampening(float dampening);
     void setExciter(int exciter);
+
     void log();
     bool available();
 
@@ -54,7 +54,9 @@ class KarplusStrong {
     int delayTime;
     int remaining_trigger_time;
 
+    ExcitationInterface* ex_interface;
     int exciter;
+//    enum exciters = ["noise", "sine", "impulse"];
 
     float feedback;
     bool busy;

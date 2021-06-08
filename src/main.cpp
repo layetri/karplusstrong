@@ -74,11 +74,10 @@
       // TODO: Implement trigger input
       //  -> for now: use only CV input for both pitch and triggering
       // Read note CV input and check if new value
-      // Apply averaging filter to note input for stability
       int input = analogRead(A7);
       if(input - in_val > 4 || input - in_val < -4) {
         in_val = input;
-        note = (in_val / 26) + 36;
+        note = (in_val / 26) + 48;
       }
 
       if (note != saved_note) {
