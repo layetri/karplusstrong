@@ -128,14 +128,18 @@
   #include "Header/Preset.h"
 
   #include <unistd.h>
+  #include <string>
   #include <termios.h>
   #include <cstdio>
   #include <map>
   #include <csignal>
 
+  using namespace std;
+
   bool done;
   static void finish(int ignore){ done = true; }
 
+  // Using a getch solution from https://stackoverflow.com/questions/421860/capture-characters-from-standard-input-without-waiting-for-enter-to-be-pressed
   char getch() {
     char buf = 0;
     struct termios old = {0};
@@ -156,6 +160,11 @@
     return (buf);
   }
 
+  // Abstraction to easily provide a text coloring utility
+  string color(string text, int color) {
+    return "\033[" + to_string(color) + "m" + text + "\033[0m";
+  }
+
   void voiceAllocator(int note, int voice_count, KarplusStrong* voices[]) {
     for(int i = 0; i < voice_count; i++) {
       if(voices[i]->available()) {
@@ -167,10 +176,11 @@
   }
 
   int main() {
+    cout << "Welcome to " << color("Tensions", 36) << endl;
     bool running = true;
 
     // Setup key lookup
-    std::map<char,int> keys;
+    map<char,int> keys;
     keys['z'] = 36;
     keys['x'] = 38;
     keys['c'] = 40;
@@ -235,7 +245,7 @@
     // Setup RTMidi
     // RTMidi implementation mostly copied from http://www.music.mcgill.ca/~gary/rtmidi/
     RtMidiIn  *midi_in = 0;
-    std::vector<unsigned char> message;
+    vector<unsigned char> message;
     int nBytes, i;
     double stamp;
 
@@ -249,8 +259,9 @@
     }
     // Check inputs.
     unsigned int nPorts = midi_in->getPortCount();
-    std::cout << "\nThere are " << nPorts << " MIDI input sources available.\n";
-    std::string portName;
+    cout << "\nThere are " << color(to_string(nPorts), 35) << " MIDI input sources available.\n";
+    // List inputs
+    string portName;
     for ( unsigned int i=0; i<nPorts; i++ ) {
       try {
         portName = midi_in->getPortName(i);
@@ -259,17 +270,17 @@
         error.printMessage();
         goto cleanup;
       }
-      std::cout << "  Input Port #" << i << ": " << portName << '\n';
+      cout << "  Input Port #" << i << ": " << portName << '\n';
     }
-
+    // Prompt user selection
     if(nPorts > 0) {
-      std::cout << "\nChoose a MIDI port to use: ";
+      cout << "\nChoose a MIDI port to use: ";
 
       int port;
-      std::cin >> port;
+      cin >> port;
       midi_in->openPort(port);
 
-      std::cout << "\n\n";
+      cout << "\n\n";
 
       // Don't ignore sysex, timing, or active sensing messages.
       midi_in->ignoreTypes(false, false, false);
@@ -278,7 +289,7 @@
       done = false;
       (void) signal(SIGINT, finish);
       // Periodically check input queue.
-      std::cout << "Reading MIDI from port " << port << "... quit with Ctrl-C.\n";
+      cout << "Reading MIDI from port " << port << "... quit with Ctrl-C.\n";
       while (!done) {
         stamp = midi_in->getMessage(&message);
         nBytes = message.size();
@@ -330,9 +341,9 @@
 
         #if defined(DEVMODE)
           for (i = 0; i < nBytes; i++)
-            std::cout << "Byte " << i << " = " << (int) message[i] << ", ";
+            cout << "Byte " << i << " = " << (int) message[i] << ", ";
           if (nBytes > 0)
-            std::cout << "stamp = " << stamp << std::endl;
+            cout << "stamp = " << stamp << endl;
         #endif
 
         // Sleep for 10 milliseconds.
@@ -340,19 +351,19 @@
       }
     } else {
       // Start the UI and print a welcome message
-      std::cout << "No MIDI inputs found, using keyboard input instead.\n" << std::endl;
-      std::cout << "====================================" << std::endl;
-      std::cout << "Keymap:" << std::endl;
-      std::cout << "====================================" << std::endl;
-      std::cout << "Q: quit" << std::endl;
-      std::cout << "W/E: increase/decrease feedback" << std::endl;
-      std::cout << "R/T: increase/decrease dampening" << std::endl;
-      std::cout << "Y/U: rotate presets left/right" << std::endl;
-      std::cout << "I: switch excitation modes" << std::endl;
-      std::cout << "Any other key plays notes" << std::endl;
-      std::cout << "====================================" << std::endl;
-      std::cout << "Have fun!" << std::endl;
-      std::cout << "====================================" << std::endl;
+      cout << "No MIDI inputs found, using keyboard input instead.\n" << endl;
+      cout << "====================================" << endl;
+      cout << "Keymap:" << endl;
+      cout << "====================================" << endl;
+      cout << "Q: quit" << endl;
+      cout << "W/E: increase/decrease feedback" << endl;
+      cout << "R/T: increase/decrease dampening" << endl;
+      cout << "Y/U: rotate presets left/right" << endl;
+      cout << "I: switch excitation modes" << endl;
+      cout << "Any other key plays notes" << endl;
+      cout << "====================================" << endl;
+      cout << "Have fun!" << endl;
+      cout << "====================================" << endl;
 
       // Loop for UI tasks
       while (running) {
