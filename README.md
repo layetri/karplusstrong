@@ -3,6 +3,8 @@ This repository contains my experimental work for the KO2D course, where I exper
 
 The project can be built for Teensy 4.0 (using PlatformIO, sort of) and x86 (using Jack, tested for macOS Big Sur). To switch platforms, simply uncomment the platform of your choice in `src/Header/Global.h`. This will toggle platform-specific code throughout the project.
 
+**Final video can be found [here](https://youtube.com/watch?v=ynqMaBoQQhg).**
+
 ### What I did so far
 #### Week 1 - 3
 Experiments with Karplus Strong in MaxMSP. What can I do to make a sound more expressive/easily controllable/nice etc.?
@@ -14,6 +16,9 @@ Break because vaccine.
 Started implementation in C++. Debugging on Teensy is (kind of) hell, so I'm also writing an implementation using Jack that can run on macOS natively. Yay for cross-platform compatibility ✨.
 #### Week 6
 Implemented the whole thing. Added a preset engine for easy morphing between settings. Ported the whole thing to work on Teensy (not optimized yet, there are still plenty of bugs).
+
+#### Week 6.5
+Added MIDI support (x86) and split the exciters off into a separate struct to clean up the code a bit. Final result: [youtube.com/watch?v=ynqMaBoQQhg](https://youtube.com/watch?v=ynqMaBoQQhg).
 
 ### Future ideas
 - Adding more IO: Audio Input that can be used as both a trigger and an exciter, a pluck trigger in, and more.
